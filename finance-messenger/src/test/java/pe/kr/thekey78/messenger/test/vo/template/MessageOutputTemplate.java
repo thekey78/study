@@ -16,10 +16,10 @@ import lombok.Setter;
 public class MessageOutputTemplate<T extends AbstractVo> extends AbstractVo {
 	private MessageOutputHeader messageOutputHeader;
 
-	@Condition(test = false)
+	@Condition(test = "00", ref = "messageOutputHeader.resultCode")
 	private MessageErrorHeader messageErrorHeader;
 
-	@Condition(test = true)
+	@Condition(test = "91", ref = "messageOutputHeader.resultCode")
 	private T body;
 
 	private MessageOutputFooter messageOutputFooter;

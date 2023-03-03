@@ -1,12 +1,6 @@
 package pe.kr.thekey78.messenger.annotation;
-import pe.kr.thekey78.messenger.enumeration.IoType;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 @Inherited
 @Documented
@@ -15,7 +9,5 @@ import java.lang.annotation.Target;
         ElementType.TYPE // 타입 선언시
 })
 public @interface MessageId {
-    String id();
-
-    IoType type();
+    String value();
 }

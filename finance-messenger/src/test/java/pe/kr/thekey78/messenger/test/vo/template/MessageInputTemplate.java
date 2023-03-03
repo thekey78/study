@@ -11,10 +11,10 @@ import pe.kr.thekey78.messenger.vo.AbstractVo;
 @Setter
 @EqualsAndHashCode
 public class MessageInputTemplate<T extends AbstractVo> extends AbstractVo {
-	private MessageInputHeader inputHeader;
+	private MessageInputHeader inputHeader = new MessageInputHeader();
 
 	private T body;
 
-	private MessageInputFooter inputFooter;
+	private MessageInputFooter inputFooter = new MessageInputFooter();
 
 }
