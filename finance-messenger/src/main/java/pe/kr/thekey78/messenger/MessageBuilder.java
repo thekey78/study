@@ -1,6 +1,7 @@
 package pe.kr.thekey78.messenger;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import pe.kr.thekey78.messenger.annotation.DefaultValue;
 import pe.kr.thekey78.messenger.annotation.Except;
 import pe.kr.thekey78.messenger.annotation.Length;
@@ -61,8 +62,11 @@ public class MessageBuilder {
                     Reference ref = field.getAnnotation(Reference.class);
                     // 참조 필드가 같은 vo 안에 있는 경우
                     Field refField = vo.getClass().getField(ref.value());
-                    Object lengthObj = refField.get(vo);
-                    buff.append(toBytes((Collection<?>) obj, Integer.parseInt(lengthObj.toString())));
+
+                    Collection lengthObj = (Collection)refField.get(vo);
+                    refField.set(vo, lengthObj.size());
+
+                    buff.append(toBytes((Collection<?>) obj));
                 } else {
                     String str = "";
                     if (obj == null)
@@ -96,15 +100,11 @@ public class MessageBuilder {
         return buff.toString().getBytes();
     }
 
-    protected String toBytes(Collection<?> collection, int length) {
+    protected String toBytes(Collection<?> collection) {
         StringBuilder buff = new StringBuilder();
-        buff.append(StringUtils.rightPad(String.valueOf(collection.size()), length, '0'));
         for (Object nextObj : collection) {
             if (nextObj instanceof AbstractVo) {
                 buff.append(toBytes((AbstractVo) nextObj));
-            }
-            if (nextObj instanceof Collection) {
-                buff.append(toBytes(collection, length));
             }
         }
         return buff.toString();
