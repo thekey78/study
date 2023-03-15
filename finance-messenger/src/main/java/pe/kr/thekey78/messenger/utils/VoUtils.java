@@ -17,18 +17,18 @@ public class VoUtils {
         return toMessageBytes(src, a_length, null);
     }
 
-    public static byte[] toMessageBytes(String src, Length a_length, CharEncoding charset) throws MessageException {
+    public static byte[] toMessageBytes(String src, Length a_length, String charEncoding) throws MessageException {
         if (a_length != null && a_length.value() > 0) {
             int length = a_length.value();
             byte[] result = new byte[length];
             Arrays.fill(result, a_length.pad());
 
             byte[] deco;
-            if(charset == null)
+            if(charEncoding == null)
                 deco = src.getBytes();
             else {
                 try {
-                    deco = src.getBytes(charset.value());
+                    deco = src.getBytes(charEncoding);
                 } catch (UnsupportedEncodingException exception) {
                     throw new MessageException(exception);
                 }
@@ -37,12 +37,12 @@ public class VoUtils {
             pad(a_length, deco, result);
             return result;
         }
-        else if(charset == null) {
+        else if(charEncoding == null) {
             return src.getBytes();
         }
         else {
             try {
-                return src.getBytes(charset.value());
+                return src.getBytes(charEncoding);
             } catch (UnsupportedEncodingException exception) {
                 throw new MessageException(exception);
             }
@@ -79,6 +79,14 @@ public class VoUtils {
 
             return Arrays.copyOfRange(bytes, 0, i+1);
         }
+    }
+
+    public static String getCharEncoding(CharEncoding charEncoding) {
+        String encoding = "UTF-8";
+        if(charEncoding != null)
+            encoding = charEncoding.value();
+
+        return encoding;
     }
 
     public static String doExtension(String str, Extension extension) {
