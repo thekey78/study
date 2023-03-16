@@ -22,7 +22,7 @@ public @interface Length {
      */
     int value() default 0;
     /**
-     * 전문의 정렬방식
+     * 필드의 정렬방식
      * @return
      */
     Align align() default Align.LEFT;
@@ -33,7 +33,7 @@ public @interface Length {
     byte pad() default Ascii.SPACE;
 
     /**
-     * 참조 Field
+     * 참조 Field. 길이가 다른 필드에 있는 경우 사용.
      * @return
      */
     String ref() default "";

@@ -1,7 +1,6 @@
 package pe.kr.thekey78.messenger.utils;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import static pe.kr.thekey78.messenger.utils.ClassType.*;
 
 public class ClassUtils {
     public static boolean isPrimitive(Class<?> clazz) {
@@ -9,40 +8,42 @@ public class ClassUtils {
     }
 
     public static boolean isVoid(Class<?> clazz) {
-        return clazz == Void.class;
+        return ClassType.getClassType(clazz) == VOID;
     }
 
     public static boolean isNumber(Class<?> clazz) {
-        return isWholeNumber(clazz) || isActualNumber(clazz) || clazz.getSuperclass() == Number.class;
+        return isWholeNumber(clazz) || isActualNumber(clazz) || Number.class.isAssignableFrom(clazz);
     }
 
     public static boolean isBoolean(Class<?> clazz) {
-        return clazz == Boolean.class;
+        return ClassType.getClassType(clazz) == BOOLEAN;
     }
 
     public static boolean isCharacter(Class clazz) {
-        return clazz == Character.class;
+        return ClassType.getClassType(clazz) == CHARACTER;
     }
 
     public static boolean isWholeNumber(Class<?> clazz) {
-        return clazz == byte.class
-                || clazz == short.class
-                || clazz == int.class
-                || clazz == long.class
-                || clazz == Byte.class
-                || clazz == Short.class
-                || clazz == Integer.class
-                || clazz == Long.class
-                || clazz == BigInteger.class
-                ;
+        switch (ClassType.getClassType(clazz)) {
+            case BYTE:
+            case SHORT:
+            case INTEGER:
+            case LONG:
+            case BIG_INTEGER:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static boolean isActualNumber(Class<?> clazz) {
-        return clazz == float.class
-                || clazz == double.class
-                || clazz == Float.class
-                || clazz == Double.class
-                || clazz == BigDecimal.class
-                ;
+        switch (ClassType.getClassType(clazz)) {
+            case FLOAT:
+            case DOUBLE:
+            case BIG_DECIMAL:
+                return true;
+            default:
+                return false;
+        }
     }
 }
