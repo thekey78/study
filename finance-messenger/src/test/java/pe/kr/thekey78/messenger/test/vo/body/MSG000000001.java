@@ -1,58 +1,58 @@
 package pe.kr.thekey78.messenger.test.vo.body;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import pe.kr.thekey78.messenger.annotation.IOType;
 import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.annotation.MessageId;
 import pe.kr.thekey78.messenger.annotation.Reference;
+import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.enumeration.IoType;
-import pe.kr.thekey78.messenger.vo.AbstractVo;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @MessageId("MSG000000001")
 public class MSG000000001 {
+    @IOType(IoType.INPUT)
     private Input input = new Input();
+
+    @IOType(IoType.OUTPUT)
     private Output output = new Output();
 
-    @IOType(IoType.INPUT)
-    @Getter @Setter
-    public static class Input extends AbstractVo {
+    @Data
+    public static class Input {
         @Length(10)
         private String userId;
 
-        @Override
-        public String toString() {
-            return "Input{" +
-                    "userId='" + userId + '\'' +
-                    '}';
+        @Length(value = 2, align = Align.RIGHT, pad = '0')
+        private int ncnt;
+
+        @Reference("ncnt")
+        private List<Rec> rec = new ArrayList<>();
+
+        @Data
+        public static class Rec {
+            @Length(value = 3, align = Align.RIGHT, pad = '0')
+            int no;
+
+            @Length(12)
+            String desc;
         }
     }
 
 
-    @IOType(IoType.OUTPUT)
     @Data
-    public static class Output extends AbstractVo{
+    public static class Output {
         @Length(2)
         private int ncnt;
 
         @Reference("ncnt")
         private List<Rec> rec;
 
-        @Override
-        public String toString() {
-            return "Output{" +
-                    "ncnt=" + ncnt +
-                    ", rec=" + rec +
-                    '}';
-        }
-
         @Data
-        public static class Rec extends AbstractVo {
+        public static class Rec {
             @Length(13)
             String acno;
 

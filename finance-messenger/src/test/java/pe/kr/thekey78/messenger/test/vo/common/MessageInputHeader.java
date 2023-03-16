@@ -6,11 +6,10 @@ import pe.kr.thekey78.messenger.annotation.DefaultValue;
 import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.enumeration.Ascii;
-import pe.kr.thekey78.messenger.vo.AbstractVo;
 
 @Data
 @EqualsAndHashCode(callSuper=false)
-public class MessageInputHeader extends AbstractVo {
+public class MessageInputHeader {
 	@Length(value = 8, align = Align.LEFT, pad = Ascii.ZERO)
 	private int length;
 	@Length(16)

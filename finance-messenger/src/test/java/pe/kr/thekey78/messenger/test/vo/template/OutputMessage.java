@@ -5,10 +5,9 @@ import pe.kr.thekey78.messenger.annotation.Condition;
 import pe.kr.thekey78.messenger.test.vo.common.MessageErrorHeader;
 import pe.kr.thekey78.messenger.test.vo.common.MessageOutputFooter;
 import pe.kr.thekey78.messenger.test.vo.common.MessageOutputHeader;
-import pe.kr.thekey78.messenger.vo.AbstractVo;
 
 @Data
-public class OutputMessage<T extends AbstractVo> extends AbstractVo {
+public class OutputMessage<T> {
 	private MessageOutputHeader messageOutputHeader;
 
 	@Condition(test = "99", ref = "messageOutputHeader.resultCode")
