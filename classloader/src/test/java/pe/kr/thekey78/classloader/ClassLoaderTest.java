@@ -10,10 +10,8 @@ import pe.kr.thekey78.classloader.test.TestVo;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Repeatable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Properties;
 
 public class ClassLoaderTest {

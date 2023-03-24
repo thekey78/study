@@ -2,6 +2,9 @@ package pe.kr.thekey78.messenger.utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class NumberUtils extends org.apache.commons.lang3.math.NumberUtils {
     public static Double doubleValue(String str) {
@@ -58,5 +61,27 @@ public class NumberUtils extends org.apache.commons.lang3.math.NumberUtils {
 
     public static BigDecimal createBigDecimal(byte[] str) {
         return createBigDecimal(new String(str));
+    }
+
+    public static int compare(final Object x, final Object y) {
+        BigDecimal l = objectToBigDecimal(x);
+        BigDecimal r = objectToBigDecimal(y);
+
+        return l.compareTo(r);
+    }
+
+    private static BigDecimal objectToBigDecimal(Object obj) {
+        BigDecimal l;
+        if (Objects.isNull(obj))
+            l = BigDecimal.ZERO;
+        else if (ClassUtils.isNumber(obj.getClass()) || obj instanceof String)
+            l = NumberUtils.createBigDecimal(obj.toString());
+        else if (obj instanceof List)
+            l = new BigDecimal(((List) obj).size());
+        else if (obj instanceof Map)
+            l = new BigDecimal(((Map) obj).size());
+        else
+            l = new BigDecimal(VoUtils.length(obj));
+        return l;
     }
 }

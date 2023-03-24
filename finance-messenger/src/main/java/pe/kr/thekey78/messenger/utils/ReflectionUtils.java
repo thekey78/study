@@ -1,7 +1,6 @@
 package pe.kr.thekey78.messenger.utils;
 
-import org.springframework.cglib.core.CodeGenerationException;
-import org.springframework.cglib.core.Constants;
+import pe.kr.thekey78.messenger.MessageException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -25,7 +24,7 @@ public class ReflectionUtils {
     }
 
     public static <T> T newInstance(Class<T> type) throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        return newInstance(type, Constants.EMPTY_CLASS_ARRAY, null);
+        return newInstance(type, null, null);
     }
 
     public static <T> T newInstance(Class<T> type, Class<?>[] parameterTypes, Object[] args) throws InvocationTargetException, InstantiationException, IllegalAccessException {
@@ -42,10 +41,7 @@ public class ReflectionUtils {
 
             return cstruct.newInstance(args);
         } finally {
-            if (!flag) {
-                cstruct.setAccessible(flag);
-            }
-
+            cstruct.setAccessible(flag);
         }
     }
 
@@ -63,8 +59,8 @@ public class ReflectionUtils {
             }
 
             return constructor;
-        } catch (NoSuchMethodException var3) {
-            throw new CodeGenerationException(var3);
+        } catch (NoSuchMethodException e) {
+            throw new MessageException(e);
         }
     }
 

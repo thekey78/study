@@ -5,11 +5,9 @@ import pe.kr.thekey78.messenger.annotation.IOType;
 import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.annotation.MessageId;
 import pe.kr.thekey78.messenger.annotation.Reference;
-import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.enumeration.IoType;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -25,21 +23,6 @@ public class MSG000000001 {
     public static class Input {
         @Length(10)
         private String userId;
-
-        @Length(value = 2, align = Align.RIGHT, pad = '0')
-        private int ncnt;
-
-        @Reference("ncnt")
-        private List<Rec> rec = new ArrayList<>();
-
-        @Data
-        public static class Rec {
-            @Length(value = 3, align = Align.RIGHT, pad = '0')
-            int no;
-
-            @Length(12)
-            String desc;
-        }
     }
 
 

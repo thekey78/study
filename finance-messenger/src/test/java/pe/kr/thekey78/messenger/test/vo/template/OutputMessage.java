@@ -2,20 +2,19 @@ package pe.kr.thekey78.messenger.test.vo.template;
 
 import lombok.Data;
 import pe.kr.thekey78.messenger.annotation.Condition;
-import pe.kr.thekey78.messenger.test.vo.common.MessageErrorHeader;
-import pe.kr.thekey78.messenger.test.vo.common.MessageOutputFooter;
-import pe.kr.thekey78.messenger.test.vo.common.MessageOutputHeader;
+import pe.kr.thekey78.messenger.test.vo.common.MessageCommonFooter;
+import pe.kr.thekey78.messenger.test.vo.common.MessageCommonHeader;
+import pe.kr.thekey78.messenger.test.vo.common.MessageResponseHeader;
 
 @Data
 public class OutputMessage<T> {
-	private MessageOutputHeader messageOutputHeader;
+	private MessageCommonHeader header;
 
-	@Condition(test = "99", ref = "messageOutputHeader.resultCode")
-	private MessageErrorHeader messageErrorHeader;
+	private MessageResponseHeader responseHeader;
 
-	@Condition(test = "00", ref = "messageOutputHeader.resultCode")
+	@Condition(el = "${ref eq '00000'}", ref = "responseHeader.resCd")
 	private T body;
 
-	private MessageOutputFooter messageOutputFooter;
+	private MessageCommonFooter footer;
 
 }

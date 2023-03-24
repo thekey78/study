@@ -1,16 +1,13 @@
 package pe.kr.thekey78.messenger;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import pe.kr.thekey78.messenger.annotation.*;
 import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.utils.*;
 
+import javax.el.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -60,17 +57,17 @@ public class MessageBuilder {
         // List에 대한 Reference 필드 처리
         for (Field field : fields) {
             // 필드가 List 일 경우
-            if(List.class.isAssignableFrom(field.getType())) {
+            if (List.class.isAssignableFrom(field.getType())) {
                 boolean accessible = field.canAccess(vo);
                 field.setAccessible(true);
-                try{
+                try {
                     Object obj = field.get(vo);
                     if (obj instanceof List) {
-                        List<?> list = List.class.cast(obj) ;
+                        List<?> list = List.class.cast(obj);
                         doReference(vo, field, list.size());
                     }
                     if (obj instanceof Object[]) {
-                        Object[] list = Object[].class.cast(obj) ;
+                        Object[] list = Object[].class.cast(obj);
                         doReference(vo, field, list.length);
                     }
                 } catch (IllegalAccessException | NoSuchFieldException e) {
@@ -81,16 +78,16 @@ public class MessageBuilder {
             }
         }
 
-        for (Field field:fields) {
+        for (Field field : fields) {
             boolean accessible = field.canAccess(vo);
             field.setAccessible(true);
 
             Except except = field.getAnnotation(Except.class);
-            if(except != null && except.value()) continue;
+            if (except != null && except.value()) continue;
 
             try {
                 Object obj = field.get(vo);
-                if (ClassUtils.isPrimitive(field.getType()) || field.getType() == String.class){
+                if (ClassUtils.isPrimitive(field.getType()) || field.getType() == String.class) {
                     DefaultValue a_defaultValue = field.getAnnotation(DefaultValue.class);
 
                     String defaultValue = "";
@@ -105,11 +102,11 @@ public class MessageBuilder {
                     Length a_length = field.getAnnotation(Length.class);
                     String charEncoding = VoUtils.getCharEncoding(field.getAnnotation(CharEncoding.class));
 
-                    if(StringUtils.isNotBlank(a_length.ref())) {
+                    if (StringUtils.isNotBlank(a_length.ref())) {
                         Object ref = findRefValue(vo, a_length.ref());
-                        int refVal = 0;
-                        if(ref instanceof Number)
-                            refVal = ((Number)ref).intValue();
+                        int refVal;
+                        if (ref instanceof Number)
+                            refVal = ((Number) ref).intValue();
                         else
                             refVal = NumberUtils.intValue(ref.toString());
                         a_length = VoUtils.newLength(a_length, refVal);
@@ -120,7 +117,7 @@ public class MessageBuilder {
                     baos.write(bytes);
                 } else if (obj instanceof List) {
                     // 필드가 List 일 경우
-                    List<?> list = List.class.cast(obj) ;
+                    List<?> list = List.class.cast(obj);
                     baos.write(getBytes(list));
                 } else {
                     // 필드가 VO인 경우
@@ -180,21 +177,40 @@ public class MessageBuilder {
                 field.setAccessible(true);
             // 전문에서 제외되는 필드
             Except except = field.getAnnotation(Except.class);
-            if(except != null && except.value()) continue;
+            if (except != null && except.value()) continue;
 
             try {
                 Condition condition = field.getAnnotation(Condition.class);
-                if(condition != null) {
-                    Object refObj = findRefValue(vo, condition.ref());
+                if (condition != null) {
+                    try {
+                        Object obj = findRefValue(vo, condition.ref());
+                        ConditionWrapper conditionWrapper = new ConditionWrapper(condition.ref(), obj);
 
-                    if(!Objects.equals(condition.test(), refObj))
-                        continue;
+                        ExpressionFactory elFactory = ExpressionFactory.newInstance();
+                        ELContext elContext = new StandardELContext(elFactory);
+                        elContext.getELResolver().setValue(elContext, null, "ref", obj);
+
+                        Object result = elFactory.createValueExpression(elContext, condition.el(), Boolean.class).getValue(elContext);
+                        if (!(result instanceof Boolean)) {
+                            throw new ELException("EL expression did not return a boolean result");
+                        }
+
+                        if (!(Boolean) result) {
+                            continue;
+                        }
+
+                    } catch (NoSuchFieldException e) {
+                        throw new MessageException(e);
+                    }
+
+
+                    // TODO
                 }
 
                 MessageBuildHelper<?> f = makeFunction(vo, field, array, position);
                 field.set(vo, f.getElement());
                 position += f.getLength();
-            } catch (IllegalAccessException | UnsupportedEncodingException | NoSuchFieldException e) {
+            } catch (IllegalAccessException | UnsupportedEncodingException e) {
                 throw new MessageException(e);
             } finally {
                 field.setAccessible(accessible);
@@ -220,7 +236,7 @@ public class MessageBuilder {
         final LongAdder len = new LongAdder();
 
         Class<?> type = field.getType();
-        if(ClassUtils.isPrimitive(type) || ClassType.getClassType(type) == ClassType.STRING) {
+        if (ClassUtils.isPrimitive(type) || ClassType.getClassType(type) == ClassType.STRING) {
             Length a_length = field.getAnnotation(Length.class);
             DecimalPosition decimalPosition = field.getAnnotation(DecimalPosition.class);
 
@@ -235,8 +251,8 @@ public class MessageBuilder {
                     throw new MessageException(e);
                 }
                 int refVal = 0;
-                if(findObj instanceof Number)
-                    refVal = ((Number)findObj).intValue();
+                if (findObj instanceof Number)
+                    refVal = ((Number) findObj).intValue();
                 else
                     refVal = NumberUtils.intValue(findObj.toString());
                 a_length = VoUtils.newLength(a_length, refVal);
@@ -246,12 +262,10 @@ public class MessageBuilder {
             final String encoding = VoUtils.getCharEncoding(field.getAnnotation(CharEncoding.class));
             sf = getSupplier(valueArr, type, decimalPosition, encoding);
             len.add(a_length.value());
-        }
-        else if(List.class.isAssignableFrom(type)) {
+        } else if (List.class.isAssignableFrom(type)) {
             // 필드가 List일 경우
             sf = getSupplier(vo, field, array, position, len, type);
-        }
-        else {
+        } else {
             sf = getSupplier(vo, field, array, type, position);
             len.add(VoUtils.length(sf.get()));
         }
@@ -259,8 +273,7 @@ public class MessageBuilder {
         return new MessageBuildHelper<>(len.intValue(), sf.get());
     }
 
-    @NotNull
-    private Supplier<?> getSupplier(@NotNull Object vo, @NotNull Field field, @NonNull byte[] array, int position, LongAdder len, Class<?> type) {
+    private Supplier<?> getSupplier(@NonNull Object vo, @NonNull Field field, @NonNull byte[] array, int position, LongAdder len, Class<?> type) {
         return () -> {
             try {
                 Reference ref = field.getAnnotation(Reference.class);
@@ -268,16 +281,15 @@ public class MessageBuilder {
                 // 참조 필드가 같은 vo 안에 있는 경우
                 Field refField = vo.getClass().getDeclaredField(ref.value());
                 boolean canAccess = refField.canAccess(vo);
-                if(!canAccess)
+                if (!canAccess)
                     refField.setAccessible(true);
 
                 Object findObj = findRefValue(vo, ref.value());
                 int repeatCnt = 0;
-                if(findObj != null) {
-                    if(ClassUtils.isWholeNumber(findObj.getClass())) {
-                        repeatCnt = ((Number)findObj).intValue();
-                    }
-                    else {
+                if (findObj != null) {
+                    if (ClassUtils.isWholeNumber(findObj.getClass())) {
+                        repeatCnt = ((Number) findObj).intValue();
+                    } else {
                         repeatCnt = NumberUtils.intValue(findObj.toString());
                     }
                 }
@@ -285,17 +297,15 @@ public class MessageBuilder {
                 refField.setAccessible(canAccess);
 
                 List<Object> result = null;
-                if(type.isInterface()) {
+                if (type.isInterface()) {
                     result = new ArrayList<>();
-                }
-                else if(type.isAnonymousClass()) {
+                } else if (type.isAnonymousClass()) {
                     result = new ArrayList<>();
-                }
-                else {
+                } else {
                     result = (List<Object>) ReflectionUtils.newInstance(type);
                 }
 
-                for(int i = 0; i < repeatCnt; i++) {
+                for (int i = 0; i < repeatCnt; i++) {
                     Object newVo = ReflectionUtils.newInstance(ReflectionUtils.getGenericClass(field.getGenericType()));
                     result.add(makeVo(newVo, array, position));
                     len.add(VoUtils.length(newVo));
@@ -326,25 +336,25 @@ public class MessageBuilder {
                 sf = () -> NumberUtils.shortValue(v);
                 break;
             case INTEGER:
-                sf = () ->  NumberUtils.intValue(v);
+                sf = () -> NumberUtils.intValue(v);
                 break;
             case LONG:
-                sf = () ->  NumberUtils.longValue(v);
+                sf = () -> NumberUtils.longValue(v);
                 break;
             case DOUBLE:
-                sf = () ->  NumberUtils.doubleValue(putDecimalPoint(decimalPosition, v));
+                sf = () -> NumberUtils.doubleValue(putDecimalPoint(decimalPosition, v));
                 break;
             case FLOAT:
-                sf = () ->  NumberUtils.floatValue(putDecimalPoint(decimalPosition, v));
+                sf = () -> NumberUtils.floatValue(putDecimalPoint(decimalPosition, v));
                 break;
             case BIG_INTEGER:
-                sf = () ->  NumberUtils.createBigInteger(v);
+                sf = () -> NumberUtils.createBigInteger(v);
                 break;
             case BIG_DECIMAL:
-                sf = () ->  NumberUtils.createBigDecimal(putDecimalPoint(decimalPosition, v));
+                sf = () -> NumberUtils.createBigDecimal(putDecimalPoint(decimalPosition, v));
                 break;
             case BOOLEAN:
-                sf = () ->  Boolean.valueOf(new String(v));
+                sf = () -> Boolean.valueOf(new String(v));
             case CHARACTER:
                 sf = () -> {
                     try {
@@ -369,11 +379,12 @@ public class MessageBuilder {
         return () -> {
             try {
                 Object subVo = field.get(vo);
-                if(subVo == null) {
+                if (subVo == null) {
                     subVo = type.getConstructor().newInstance();
                 }
                 return makeVo(subVo, array, p);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                     NoSuchMethodException e) {
                 throw new MessageException(e);
             }
         };
@@ -382,11 +393,12 @@ public class MessageBuilder {
     private String putDecimalPoint(@NonNull DecimalPosition decimalPosition, @NonNull byte[] value) {
         return putDecimalPoint(decimalPosition, new String(value));
     }
+
     private String putDecimalPoint(@NonNull DecimalPosition decimalPosition, @NonNull String value) {
         int p = decimalPosition.position();
         Align align = decimalPosition.type();
         StringBuilder builder = new StringBuilder();
-        if(align == Align.RIGHT)
+        if (align == Align.RIGHT)
             builder.append(value.substring(0, value.length() - p))
                     .append(".")
                     .append(value.substring(value.length() - p));
@@ -397,11 +409,49 @@ public class MessageBuilder {
         return builder.toString();
     }
 
+    private int getLength(Object obj) {
+        if (obj == null)
+            return 0;
+        else if (ClassUtils.isNumber(obj.getClass()))
+            return obj.toString().length();
+        else if (obj instanceof String)
+            return ((String) obj).length();
+        else if (obj instanceof List)
+            return ((List) obj).size();
+        else if (obj instanceof Map)
+            return ((Map) obj).size();
+        else
+            return VoUtils.length(obj);
+    }
+
+    private static CompositeELResolver createELELResolver(ELContext context, ConditionWrapper obj) {
+        CompositeELResolver resolver = new CompositeELResolver();
+        resolver.add(new BeanELResolver());
+        resolver.add(new ArrayELResolver());
+        resolver.add(new ListELResolver());
+//        resolver.setValue(context, obj, "this", obj);
+        resolver.setValue(context, null, "ref", obj.value);
+
+        return resolver;
+    }
+
+
     @Getter
     @AllArgsConstructor
     @RequiredArgsConstructor
     private static class MessageBuildHelper<E> {
         private int length;
         private E element;
+    }
+
+    @Data
+    public static class ConditionWrapper {
+        private Object ref;
+        private Object value;
+
+        private ConditionWrapper(Object ref, Object value) {
+            this.ref = ref;
+            this.value = value;
+        }
     }
 }

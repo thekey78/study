@@ -1,15 +1,15 @@
 package pe.kr.thekey78.messenger.test.vo.template;
 
 import lombok.Data;
-import pe.kr.thekey78.messenger.test.vo.common.MessageInputFooter;
-import pe.kr.thekey78.messenger.test.vo.common.MessageInputHeader;
+import pe.kr.thekey78.messenger.test.vo.common.MessageCommonFooter;
+import pe.kr.thekey78.messenger.test.vo.common.MessageCommonHeader;
 
 @Data
 public class InputMessage<T> {
-	private MessageInputHeader inputHeader = new MessageInputHeader();
+	private MessageCommonHeader header = new MessageCommonHeader();
 
 	private T body;
 
-	private MessageInputFooter inputFooter = new MessageInputFooter();
+	private MessageCommonFooter footer = new MessageCommonFooter();
 
 }

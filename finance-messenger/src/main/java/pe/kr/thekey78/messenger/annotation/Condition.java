@@ -10,7 +10,7 @@ import java.lang.annotation.*;
         ElementType.TYPE // 타입 선언시
 })
 public @interface Condition {
-    String test();
-
     String ref();
+
+    String el();
 }

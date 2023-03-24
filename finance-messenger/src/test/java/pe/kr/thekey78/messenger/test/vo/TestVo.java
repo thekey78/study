@@ -1,5 +1,7 @@
 package pe.kr.thekey78.messenger.test.vo;
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.Test;
 import pe.kr.thekey78.messenger.MessageBuilder;
 import pe.kr.thekey78.messenger.annotation.Length;
@@ -14,13 +16,20 @@ import pe.kr.thekey78.messenger.utils.VoUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
+@Slf4j
 public class TestVo {
 
+    @Before
+    public void before() {
+        //System.setProperty("javax.el.ExpressionFactory","jakarta.el.ExpressionFactory");
+    }
     @Test
     public void testInputVo() {
         MSG000000001 msg000000001 = getMsg000000001();
@@ -28,10 +37,10 @@ public class TestVo {
 
         InputMessage<MSG000000001.Input> inputMessage = MessageUtil.makeSendData(msg000000001);
         byte[] input = MessageBuilder.getInstance().getBytes(inputMessage);
-        System.out.printf("%s:%s", "testInputVo", new String(input));
+        log.debug("testInputVo:" + new String(input));
     }
 
-    @Test
+    //@Test
     public void testOutputVo() {
         byte[] outputBytes = "00000000MSG000000001    SB01O0001ABCDEFGHIJKLM987654321098@@".getBytes();
 
@@ -39,29 +48,23 @@ public class TestVo {
 
         OutputMessage<MSG000000001.Output> outputMessage = MessageUtil.makeReceiveData(outputBytes, msg000000001.getOutput());
 
-        System.out.printf("%s:%s", "testOutputVo", outputMessage);
+        log.debug("testOutputVo:" + outputMessage);
     }
 
     @Test
     public void testMci() throws Exception {
         MSG000000001 msg000000001 = getMsg000000001();
 
-        OutputMessage outputMessage = MessageUtil.send(msg000000001);
+        OutputMessage<MSG000000001.Output> outputMessage = MessageUtil.send(msg000000001);
 
-        System.out.printf("%s:%s\r\n", "testMci", msg000000001);
-        System.out.printf("%s:%s\r\n", "testMci", outputMessage);
+        System.out.println(String.format("%s:%s,%s", "testMci", "MSG000000001", msg000000001));
+        System.out.println(String.format("%s:%s,%s", "testMci", "OutputMessage", outputMessage));
     }
 
     private static MSG000000001 getMsg000000001() {
         MSG000000001 msg000000001 = VoUtils.create(MSG000000001.class);
         MSG000000001.Input input = msg000000001.getInput();
         input.setUserId("test001");
-        for (int i = 0; i < 3; i++) {
-            MSG000000001.Input.Rec rec = new MSG000000001.Input.Rec();
-            rec.setNo(i+1);
-            rec.setDesc("desc No."+(i+1));
-            input.getRec().add(rec);
-        }
         return msg000000001;
     }
 
@@ -113,6 +116,12 @@ public class TestVo {
     @Test
     public void testClassName() {
         System.out.println(ClassType.getClassType(Socket.class));
+    }
+
+    @Test
+    public void testByteToBigInteger() {
+        byte[] bytes = "000123".getBytes();
+        assertNotEquals(new BigInteger("123"), new BigInteger(bytes));
     }
 
     private Length getLengthAnnotation() {

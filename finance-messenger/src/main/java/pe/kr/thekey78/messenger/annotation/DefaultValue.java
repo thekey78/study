@@ -1,11 +1,6 @@
 package pe.kr.thekey78.messenger.annotation;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * VO 필드에 대한 기본값 설정. byte, short, int, long, float, double, boolean, BigInteger, BigDecimal 및 Wrapper Class에 대해 설정이 가능하다.

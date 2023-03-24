@@ -1,13 +1,14 @@
-package pe.kr.thekey78.messenger.transfer.transport.external;
+package pe.kr.thekey78.transfer.info;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import pe.kr.thekey78.messenger.transfer.TransgerType;
 
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
+@Builder()
 public class HostInfo {
     /**
      * Host ip

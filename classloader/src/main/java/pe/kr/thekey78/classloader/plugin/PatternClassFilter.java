@@ -1,10 +1,10 @@
 package pe.kr.thekey78.classloader.plugin;
 
+import pe.kr.thekey78.classloader.spi.ClassFilter;
+
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import pe.kr.thekey78.classloader.spi.ClassFilter;
 
 public class PatternClassFilter implements ClassFilter {
     /** The class patterns as regular expressions */

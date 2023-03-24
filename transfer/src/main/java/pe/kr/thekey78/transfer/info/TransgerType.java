@@ -1,4 +1,4 @@
-package pe.kr.thekey78.messenger.transfer;
+package pe.kr.thekey78.transfer.info;
 
 public enum TransgerType {
     SOCKET, HTTP
