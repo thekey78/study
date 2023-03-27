@@ -1,10 +1,9 @@
 package pe.kr.thekey78.messenger.test.vo.body;
 
 import lombok.Data;
-import pe.kr.thekey78.messenger.annotation.IOType;
-import pe.kr.thekey78.messenger.annotation.Length;
-import pe.kr.thekey78.messenger.annotation.MessageId;
-import pe.kr.thekey78.messenger.annotation.Reference;
+import pe.kr.thekey78.messenger.annotation.*;
+import pe.kr.thekey78.messenger.enumeration.Align;
+import pe.kr.thekey78.messenger.enumeration.Ascii;
 import pe.kr.thekey78.messenger.enumeration.IoType;
 
 import java.math.BigInteger;
@@ -23,6 +22,10 @@ public class MSG000000001 {
     public static class Input {
         @Length(10)
         private String userId;
+
+        @Length(32)
+        @Extension("toHex")
+        private String password;
     }
 
 
@@ -39,7 +42,7 @@ public class MSG000000001 {
             @Length(13)
             String acno;
 
-            @Length(12)
+            @Length(value = 12, align = Align.RIGHT, pad = Ascii.ZERO)
             BigInteger balance;
         }
     }

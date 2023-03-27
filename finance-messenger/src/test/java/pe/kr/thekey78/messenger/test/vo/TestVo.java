@@ -6,6 +6,8 @@ import org.junit.Test;
 import pe.kr.thekey78.messenger.MessageBuilder;
 import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.enumeration.Align;
+import pe.kr.thekey78.messenger.test.util.Byte2Hex;
+import pe.kr.thekey78.messenger.test.util.Hex2Byte;
 import pe.kr.thekey78.messenger.test.util.MessageUtil;
 import pe.kr.thekey78.messenger.test.vo.body.MSG000000001;
 import pe.kr.thekey78.messenger.test.vo.template.InputMessage;
@@ -20,14 +22,15 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class TestVo {
 
     @Before
     public void before() {
+        MessageBuilder.getInstance().setExtension("toHex", new Byte2Hex());
+        MessageBuilder.getInstance().setExtension("fromHex", new Hex2Byte());
         //System.setProperty("javax.el.ExpressionFactory","jakarta.el.ExpressionFactory");
     }
     @Test
@@ -37,18 +40,18 @@ public class TestVo {
 
         InputMessage<MSG000000001.Input> inputMessage = MessageUtil.makeSendData(msg000000001);
         byte[] input = MessageBuilder.getInstance().getBytes(inputMessage);
-        log.debug("testInputVo:" + new String(input));
+        System.out.println(String.format("testInputVo:" + new String(input)));
     }
 
-    //@Test
+    @Test
     public void testOutputVo() {
-        byte[] outputBytes = "00000000MSG000000001    SB01O0001ABCDEFGHIJKLM987654321098@@".getBytes();
+        byte[] outputBytes = "00000247SMPTRN000000002     Scfd07eca3d724810bd0305832de006822023020613560101120230206135601011 000009999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999990288888888888880164775213427777777777777336477521342@@".getBytes();
 
         MSG000000001 msg000000001 = VoUtils.create(MSG000000001.class);
 
         OutputMessage<MSG000000001.Output> outputMessage = MessageUtil.makeReceiveData(outputBytes, msg000000001.getOutput());
 
-        log.debug("testOutputVo:" + outputMessage);
+        System.out.println(String.format("testOutputVo:" + outputMessage));
     }
 
     @Test
@@ -65,6 +68,7 @@ public class TestVo {
         MSG000000001 msg000000001 = VoUtils.create(MSG000000001.class);
         MSG000000001.Input input = msg000000001.getInput();
         input.setUserId("test001");
+        input.setPassword("ABCD");
         return msg000000001;
     }
 
@@ -76,7 +80,7 @@ public class TestVo {
         assertEquals(Integer.class, obj1.getClass());
 
         Object obj2 = Integer.parseInt("123");
-        assertEquals(true, List.class.isAssignableFrom(List.class));
+        assertTrue(List.class.isAssignableFrom(List.class));
     }
 
     @Test
