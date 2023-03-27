@@ -211,7 +211,7 @@ public class VoUtils {
             //확장필드 처리
             for (String key : extension.value()) {
                 MessageExtension messageExtension = messageBuilder.getMessageExtension(key);
-                result = new String(messageExtension.doExtension(original.getBytes()));
+                result = new String(messageExtension.doExtension(result.getBytes()));
             }
         }
         return result;

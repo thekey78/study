@@ -6,9 +6,7 @@ import org.junit.Test;
 import pe.kr.thekey78.messenger.MessageBuilder;
 import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.enumeration.Align;
-import pe.kr.thekey78.messenger.test.util.Byte2Hex;
-import pe.kr.thekey78.messenger.test.util.Hex2Byte;
-import pe.kr.thekey78.messenger.test.util.MessageUtil;
+import pe.kr.thekey78.messenger.test.util.*;
 import pe.kr.thekey78.messenger.test.vo.body.MSG000000001;
 import pe.kr.thekey78.messenger.test.vo.template.InputMessage;
 import pe.kr.thekey78.messenger.test.vo.template.OutputMessage;
@@ -29,8 +27,12 @@ public class TestVo {
 
     @Before
     public void before() {
-        MessageBuilder.getInstance().setExtension("toHex", new Byte2Hex());
-        MessageBuilder.getInstance().setExtension("fromHex", new Hex2Byte());
+        MessageBuilder builder = MessageBuilder.getInstance();
+        builder.setExtension("toHex", new Byte2Hex());
+        builder.setExtension("fromHex", new Hex2Byte());
+        builder.setExtension("enc", new EncryptPassword());
+        builder.setExtension("base64encode", new EncodeBase64Extension());
+        builder.setExtension("hex-encode", new EncodeHexExtension());
         //System.setProperty("javax.el.ExpressionFactory","jakarta.el.ExpressionFactory");
     }
     @Test

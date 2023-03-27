@@ -23,8 +23,8 @@ public class MSG000000001 {
         @Length(10)
         private String userId;
 
-        @Length(32)
-        @Extension("toHex")
+        @Length(128)
+        @Extension({"enc", "base64encode"})
         private String password;
     }
 
