@@ -8,6 +8,7 @@ import pe.kr.thekey78.messenger.annotation.Length;
 import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.test.util.*;
 import pe.kr.thekey78.messenger.test.vo.body.MSG000000001;
+import pe.kr.thekey78.messenger.test.vo.common.MessageCommonFooter;
 import pe.kr.thekey78.messenger.test.vo.template.InputMessage;
 import pe.kr.thekey78.messenger.test.vo.template.OutputMessage;
 import pe.kr.thekey78.messenger.utils.ClassType;
@@ -47,10 +48,9 @@ public class TestVo {
 
     @Test
     public void testOutputVo() {
-        byte[] outputBytes = "00000247SMPTRN000000002     Scfd07eca3d724810bd0305832de006822023020613560101120230206135601011 000009999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999990288888888888880164775213427777777777777336477521342@@".getBytes();
-
+        byte[] outputBytes = "00000247SMPTRN000000002     Scfd07eca3d724810bd0305832de0068220230206135601011202302061356010110000009999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999990288888888888880164775213427777777777777336477521342@@".getBytes();
+//        byte[] outputBytes = "00000247SMPTRN000000002     Scfd07eca3d724810bd0305832de006822023020613560101120230206135601011 99999에러메세지 어쩌구 저쩌구~~~                      에러메세지 어쩌구 저쩌구~~~                      @@".getBytes();
         MSG000000001 msg000000001 = VoUtils.create(MSG000000001.class);
-
         OutputMessage<MSG000000001.Output> outputMessage = MessageUtil.makeReceiveData(outputBytes, msg000000001.getOutput());
 
         System.out.println(String.format("testOutputVo:" + outputMessage));
@@ -67,7 +67,7 @@ public class TestVo {
     }
 
     private static MSG000000001 getMsg000000001() {
-        MSG000000001 msg000000001 = VoUtils.create(MSG000000001.class);
+        MSG000000001 msg000000001 = new MSG000000001();
         MSG000000001.Input input = msg000000001.getInput();
         input.setUserId("test001");
         input.setPassword("ABCD");
@@ -90,11 +90,13 @@ public class TestVo {
         String value = "002233";
         int p = 2;
 
-        Align align = Align.LEFT;
+        Align align = Align.RIGHT;
+        StringBuilder sb = new StringBuilder(value);
+
         if(align == Align.RIGHT)
-            assertEquals("0022.33", value.substring(0, value.length() - p) + "." + value.substring(value.length() - p));
+            assertEquals("0022.33", sb.insert(value.length() - p, ".").toString());
         else
-            assertEquals("00.2233", value.substring(0, p) + "." + value.substring(p));
+            assertEquals("00.2233", sb.insert(p, ".").toString());
     }
 
     @Test
@@ -158,5 +160,11 @@ public class TestVo {
                 return "";
             }
         };
+    }
+
+    @Test
+    public void testVo111() {
+        System.out.println(VoUtils.create(MessageCommonFooter.class));
+        System.out.println(new MessageCommonFooter());
     }
 }

@@ -12,7 +12,7 @@ public class OutputMessage<T> {
 
 	private MessageResponseHeader responseHeader;
 
-	@Condition(el = "${ref eq '00000'}", ref = "responseHeader.resCd")
+	@Condition(el = "${ref[0] eq '0' and ref[1] eq '00000'}", ref = "responseHeader.rsltDvcd,responseHeader.resCd")
 	private T body;
 
 	private MessageCommonFooter footer;

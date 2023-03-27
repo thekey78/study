@@ -6,7 +6,7 @@ import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.enumeration.Ascii;
 import pe.kr.thekey78.messenger.enumeration.IoType;
 
-import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -43,7 +43,8 @@ public class MSG000000001 {
             String acno;
 
             @Length(value = 12, align = Align.RIGHT, pad = Ascii.ZERO)
-            BigInteger balance;
+            @DecimalPosition(position = 3, type = Align.RIGHT)
+            BigDecimal balance;
         }
     }
 }

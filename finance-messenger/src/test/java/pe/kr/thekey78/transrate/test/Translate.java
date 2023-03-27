@@ -1,7 +1,5 @@
 package pe.kr.thekey78.transrate.test;
 
-import pe.kr.thekey78.messenger.test.util.Target;
-
 public class Translate {
     private static class Singleton {
         private static Translate INSTANCE;

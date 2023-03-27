@@ -2,8 +2,6 @@ package pe.kr.thekey78.messenger.test.util;
 
 import pe.kr.thekey78.messenger.MessageExtension;
 
-import java.util.Base64;
-
 public class EncodeHexExtension implements MessageExtension {
     @Override
     public byte[] doExtension(byte[] value) {

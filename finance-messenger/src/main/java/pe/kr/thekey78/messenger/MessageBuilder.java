@@ -1,13 +1,19 @@
 package pe.kr.thekey78.messenger;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import pe.kr.thekey78.messenger.annotation.*;
 import pe.kr.thekey78.messenger.enumeration.Align;
 import pe.kr.thekey78.messenger.utils.*;
 
-import javax.el.*;
+import javax.el.ELContext;
+import javax.el.ELException;
+import javax.el.ExpressionFactory;
+import javax.el.StandardELContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -133,7 +139,7 @@ public class MessageBuilder {
         return baos.toByteArray();
     }
 
-    private static <T> void doReference(@NonNull T vo, @NonNull Field field, int size) throws NoSuchFieldException, IllegalAccessException {
+    private <T> void doReference(@NonNull T vo, @NonNull Field field, int size) throws NoSuchFieldException, IllegalAccessException {
         Class<?> clazz = vo.getClass();
         Reference ref = field.getAnnotation(Reference.class);
         // 참조 필드가 같은 vo 안에 있는 경우만 처리 가능
@@ -184,7 +190,6 @@ public class MessageBuilder {
                 if (condition != null) {
                     try {
                         Object obj = findRefValue(vo, condition.ref());
-                        ConditionWrapper conditionWrapper = new ConditionWrapper(condition.ref(), obj);
 
                         ExpressionFactory elFactory = ExpressionFactory.newInstance();
                         ELContext elContext = new StandardELContext(elFactory);
@@ -202,9 +207,6 @@ public class MessageBuilder {
                     } catch (NoSuchFieldException e) {
                         throw new MessageException(e);
                     }
-
-
-                    // TODO
                 }
 
                 MessageBuildHelper<?> f = makeFunction(vo, field, array, position);
@@ -218,11 +220,24 @@ public class MessageBuilder {
         }
     }
 
-    private static <T> Object findRefValue(@NonNull T vo, @NonNull String refValue) throws NoSuchFieldException, IllegalAccessException {
-        String[] strRefs = refValue.split("[.]");
+    private <T> Object findRefValue(@NonNull T vo, @NonNull String refValues) throws NoSuchFieldException, IllegalAccessException {
+        String[] vs = refValues.split(",");
+        if(vs.length > 1) {
+            List<Object> result = new ArrayList<>();
+            for (String v : vs) {
+                result.add(getRefObj(vo, v.split("[.]")));
+            }
+            return result;
+        }
+        else {
+            return getRefObj(vo, refValues.split("[.]"));
+        }
+    }
+
+    private static <T> Object getRefObj(T vo, String[] strFields) throws NoSuchFieldException, IllegalAccessException {
         Object refObj = vo;
-        for (String strRef : strRefs) {
-            Field refField = refObj.getClass().getDeclaredField(strRef);
+        for (String strRef : strFields) {
+            Field refField = refObj.getClass().getDeclaredField(strRef.trim());
             refField.setAccessible(true);
             refObj = refField.get(refObj);
         }
@@ -231,7 +246,7 @@ public class MessageBuilder {
 
     @SuppressWarnings("cast")
     private MessageBuildHelper<?> makeFunction(@NonNull final Object vo, final @NonNull Field field, @NonNull final byte[] array, final int position) throws UnsupportedEncodingException {
-        Supplier<?> sf = null;
+        Supplier<?> sf;
 
         final LongAdder len = new LongAdder();
 
@@ -244,13 +259,13 @@ public class MessageBuilder {
             System.arraycopy(array, position, valueArr, 0, a_length.value());
 
             if (StringUtils.isNotBlank(a_length.ref())) {
-                Object findObj = null;
+                Object findObj;
                 try {
                     findObj = findRefValue(vo, a_length.ref());
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new MessageException(e);
                 }
-                int refVal = 0;
+                int refVal;
                 if (findObj instanceof Number)
                     refVal = ((Number) findObj).intValue();
                 else
@@ -296,7 +311,7 @@ public class MessageBuilder {
 
                 refField.setAccessible(canAccess);
 
-                List<Object> result = null;
+                List<Object> result;
                 if (type.isInterface()) {
                     result = new ArrayList<>();
                 } else if (type.isAnonymousClass()) {
@@ -397,44 +412,13 @@ public class MessageBuilder {
     private String putDecimalPoint(@NonNull DecimalPosition decimalPosition, @NonNull String value) {
         int p = decimalPosition.position();
         Align align = decimalPosition.type();
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(value);
         if (align == Align.RIGHT)
-            builder.append(value.substring(0, value.length() - p))
-                    .append(".")
-                    .append(value.substring(value.length() - p));
+            builder.insert(value.length() - p, ".");
         else
-            builder.append(value.substring(0, p))
-                    .append(".")
-                    .append(value.substring(p));
+            builder.insert(p, ".");
         return builder.toString();
     }
-
-    private int getLength(Object obj) {
-        if (obj == null)
-            return 0;
-        else if (ClassUtils.isNumber(obj.getClass()))
-            return obj.toString().length();
-        else if (obj instanceof String)
-            return ((String) obj).length();
-        else if (obj instanceof List)
-            return ((List) obj).size();
-        else if (obj instanceof Map)
-            return ((Map) obj).size();
-        else
-            return VoUtils.length(obj);
-    }
-
-    private static CompositeELResolver createELELResolver(ELContext context, ConditionWrapper obj) {
-        CompositeELResolver resolver = new CompositeELResolver();
-        resolver.add(new BeanELResolver());
-        resolver.add(new ArrayELResolver());
-        resolver.add(new ListELResolver());
-//        resolver.setValue(context, obj, "this", obj);
-        resolver.setValue(context, null, "ref", obj.value);
-
-        return resolver;
-    }
-
 
     @Getter
     @AllArgsConstructor
@@ -442,16 +426,5 @@ public class MessageBuilder {
     private static class MessageBuildHelper<E> {
         private int length;
         private E element;
-    }
-
-    @Data
-    public static class ConditionWrapper {
-        private Object ref;
-        private Object value;
-
-        private ConditionWrapper(Object ref, Object value) {
-            this.ref = ref;
-            this.value = value;
-        }
     }
 }
