@@ -34,6 +34,8 @@ public class FailOverSocket {
             thread.setWriteBytes(bytes);
             thread.start();
             thread.join();
+            if (thread.ioException != null)
+                throw new RuntimeException(thread.ioException);
             return thread.getReadBytes();
         }
         catch (InterruptedException e) {
@@ -93,13 +95,14 @@ public class FailOverSocket {
                 }
             }
             catch (IOException e) {
-                log.error(e.getLocalizedMessage(), e);
+                ioException = e;
             }
         }
         private void write(Selector selector, SelectionKey selectionKey) {
             try {
                 SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
                 socketChannel.configureBlocking(false);
+                log.info(String.format("데이터 전송 [%s]", new String(writeBytes)));
                 ByteBuffer buffer = ByteBuffer.wrap(writeBytes);
                 socketChannel.write(buffer);
                 socketChannel.register(selector, SelectionKey.OP_READ, selectionKey.attachment());
@@ -129,6 +132,7 @@ public class FailOverSocket {
                 readBytes = new byte[totalLength.length + body.length];
                 System.arraycopy(totalLength, 0, readBytes, 0, totalLength.length);
                 System.arraycopy(body, 0, readBytes, totalLength.length, body.length);
+                log.info(String.format("데이터 수신 [%s]", new String(readBytes)));
             }
             catch (IOException e) {
                 ioException = e;
@@ -137,6 +141,7 @@ public class FailOverSocket {
                 close(selector);
                 close(socketChannel);
                 selectionKey.cancel();
+                log.info(String.format("접속 종료 : %s:%s", failOverSocket.host, failOverSocket.port));
             }
         }
 

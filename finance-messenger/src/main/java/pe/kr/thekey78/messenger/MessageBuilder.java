@@ -17,6 +17,7 @@ import javax.el.StandardELContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -67,15 +68,19 @@ public class MessageBuilder {
                 boolean accessible = field.canAccess(vo);
                 field.setAccessible(true);
                 try {
-                    Object obj = field.get(vo);
-                    if (obj instanceof List) {
-                        List<?> list = List.class.cast(obj);
-                        doReference(vo, field, list.size());
-                    }
-                    if (obj instanceof Object[]) {
-                        Object[] list = Object[].class.cast(obj);
-                        doReference(vo, field, list.length);
-                    }
+                    List<?> list = (List) field.get(vo);
+                    doReference(vo, field.getAnnotation(Reference.class), list.size());
+                } catch (IllegalAccessException | NoSuchFieldException e) {
+                    throw new MessageException(e);
+                } finally {
+                    field.setAccessible(accessible);
+                }
+            } else if (field.getType().isArray()) {
+                boolean accessible = field.canAccess(vo);
+                field.setAccessible(true);
+                try {
+                    Object[] list = (Object[]) field.get(vo);
+                    doReference(vo, field.getAnnotation(Reference.class), list.length);
                 } catch (IllegalAccessException | NoSuchFieldException e) {
                     throw new MessageException(e);
                 } finally {
@@ -125,6 +130,10 @@ public class MessageBuilder {
                     // 필드가 List 일 경우
                     List<?> list = List.class.cast(obj);
                     baos.write(getBytes(list));
+                } else if (obj instanceof Object[]) {
+                    // 필드가 List 일 경우
+                    List<?> list = Arrays.asList(obj);
+                    baos.write(getBytes(list));
                 } else {
                     // 필드가 VO인 경우
                     baos.write(getBytes(obj));
@@ -139,9 +148,8 @@ public class MessageBuilder {
         return baos.toByteArray();
     }
 
-    private <T> void doReference(@NonNull T vo, @NonNull Field field, int size) throws NoSuchFieldException, IllegalAccessException {
+    private <T> void doReference(@NonNull T vo, @NonNull Reference ref, int size) throws NoSuchFieldException, IllegalAccessException {
         Class<?> clazz = vo.getClass();
-        Reference ref = field.getAnnotation(Reference.class);
         // 참조 필드가 같은 vo 안에 있는 경우만 처리 가능
         Field refField = clazz.getDeclaredField(ref.value());
         boolean b = refField.canAccess(vo);
@@ -162,17 +170,19 @@ public class MessageBuilder {
         return byteArrayOutputStream.toByteArray();
     }
 
-    public <T> T fromBytes(@NonNull final byte[] array, @NonNull final Class<T> t) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        T outputBody = t.getConstructor().newInstance();
-        fromBytes(array, outputBody);
-        return outputBody;
+    public <T> T fromBytes(@NonNull final byte[] array, @NonNull final Class<T> t) {
+        try {
+            T newInstance = t.getConstructor().newInstance();
+            fromBytes(array, newInstance);
+            return newInstance;
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+                 InvocationTargetException e) {
+            throw new MessageException(e);
+        }
     }
 
     public <T> void fromBytes(@NonNull final byte[] array, @NonNull final T vo) {
-        fromBytes(array, 0, vo);
-    }
-
-    public <T> void fromBytes(@NonNull final byte[] array, int position, @NonNull final T vo) {
+        int position = 0;
         Class<?> clazz = vo.getClass();
         Field[] fields = clazz.getDeclaredFields();
 
@@ -209,7 +219,7 @@ public class MessageBuilder {
                     }
                 }
 
-                MessageBuildHelper<?> f = makeFunction(vo, field, array, position);
+                MessageBuildHelper<?> f = getMessageBuildHelper(vo, field, array, position);
                 field.set(vo, f.getElement());
                 position += f.getLength();
             } catch (IllegalAccessException | UnsupportedEncodingException e) {
@@ -217,19 +227,18 @@ public class MessageBuilder {
             } finally {
                 field.setAccessible(accessible);
             }
-        }
+        } // end for
     }
 
     private <T> Object findRefValue(@NonNull T vo, @NonNull String refValues) throws NoSuchFieldException, IllegalAccessException {
         String[] vs = refValues.split(",");
-        if(vs.length > 1) {
+        if (vs.length > 1) {
             List<Object> result = new ArrayList<>();
             for (String v : vs) {
                 result.add(getRefObj(vo, v.split("[.]")));
             }
             return result;
-        }
-        else {
+        } else {
             return getRefObj(vo, refValues.split("[.]"));
         }
     }
@@ -245,7 +254,7 @@ public class MessageBuilder {
     }
 
     @SuppressWarnings("cast")
-    private MessageBuildHelper<?> makeFunction(@NonNull final Object vo, final @NonNull Field field, @NonNull final byte[] array, final int position) throws UnsupportedEncodingException {
+    private MessageBuildHelper<?> getMessageBuildHelper(@NonNull final Object vo, final @NonNull Field field, @NonNull final byte[] array, final int position) throws UnsupportedEncodingException {
         Supplier<?> sf;
 
         final LongAdder len = new LongAdder();
@@ -279,59 +288,91 @@ public class MessageBuilder {
             len.add(a_length.value());
         } else if (List.class.isAssignableFrom(type)) {
             // 필드가 List일 경우
-            sf = getSupplier(vo, field, array, position, len, type);
+            sf = getSupplierList(vo, field, array, position, len);
+        } else if (type.isArray()) {
+            // 필드가 Array일 경우
+            sf = getSupplierArray(vo, field, array, position, len);
         } else {
-            sf = getSupplier(vo, field, array, type, position);
+            sf = getSupplier(vo, field, array, position);
             len.add(VoUtils.length(sf.get()));
         }
 
         return new MessageBuildHelper<>(len.intValue(), sf.get());
     }
 
-    private Supplier<?> getSupplier(@NonNull Object vo, @NonNull Field field, @NonNull byte[] array, int position, LongAdder len, Class<?> type) {
-        return () -> {
-            try {
-                Reference ref = field.getAnnotation(Reference.class);
+    private <E> Supplier<List<E>> getSupplierList(@NonNull Object vo, @NonNull Field field, @NonNull byte[] array, int position, LongAdder len) {
+        Class<?> type = field.getType();
+        try {
+            int repeatCnt = getRepeatCnt(vo, field);
 
-                // 참조 필드가 같은 vo 안에 있는 경우
-                Field refField = vo.getClass().getDeclaredField(ref.value());
-                boolean canAccess = refField.canAccess(vo);
-                if (!canAccess)
-                    refField.setAccessible(true);
-
-                Object findObj = findRefValue(vo, ref.value());
-                int repeatCnt = 0;
-                if (findObj != null) {
-                    if (ClassUtils.isWholeNumber(findObj.getClass())) {
-                        repeatCnt = ((Number) findObj).intValue();
-                    } else {
-                        repeatCnt = NumberUtils.intValue(findObj.toString());
-                    }
-                }
-
-                refField.setAccessible(canAccess);
-
-                List<Object> result;
-                if (type.isInterface()) {
-                    result = new ArrayList<>();
-                } else if (type.isAnonymousClass()) {
+            List<E> result;
+            if (field.get(vo) != null) {
+                result = (List<E>) field.get(vo);
+            } else {
+                if (type.isInterface() || type.isAnonymousClass()) {
                     result = new ArrayList<>();
                 } else {
-                    result = (List<Object>) ReflectionUtils.newInstance(type);
+                    result = (List<E>) ReflectionUtils.newInstance(type);
                 }
-
-                for (int i = 0; i < repeatCnt; i++) {
-                    Object newVo = ReflectionUtils.newInstance(ReflectionUtils.getGenericClass(field.getGenericType()));
-                    result.add(makeVo(newVo, array, position));
-                    len.add(VoUtils.length(newVo));
-                }
-
-                return result;
-            } catch (NoSuchFieldException | IllegalAccessException | ClassNotFoundException |
-                     InvocationTargetException | InstantiationException e) {
-                throw new MessageException(e);
             }
-        };
+
+            for (int i = 0; i < repeatCnt; i++) {
+                Class<E> newVo = ReflectionUtils.getGenericClass(field.getGenericType());
+                result.add(makeVo(newVo, array, position));
+                int voLength = VoUtils.length(result.get(result.size() - 1));
+                len.add(voLength);
+                position += voLength;
+            }
+
+            return () -> result;
+        } catch (NoSuchFieldException | IllegalAccessException | ClassNotFoundException |
+                 InvocationTargetException | InstantiationException e) {
+            throw new MessageException(e);
+        }
+    }
+
+    @SuppressWarnings("cast")
+    private <E> Supplier<E[]> getSupplierArray(@NonNull Object vo, @NonNull Field field, @NonNull byte[] array, int position, LongAdder len) {
+        try {
+            int repeatCnt = getRepeatCnt(vo, field);
+
+            Class<E> eClass = (Class<E>) field.getType().getComponentType();
+            E[] e = (E[]) Array.newInstance(eClass, repeatCnt);
+
+            for (int i = 0; i < repeatCnt; i++) {
+                e[i] = makeVo(eClass, array, position);
+                int voLength = VoUtils.length(e[i]);
+                len.add(voLength);
+                position += voLength;
+            }
+
+            return () -> e;
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new MessageException(e);
+        }
+    }
+
+    private int getRepeatCnt(Object vo, Field field) throws NoSuchFieldException, IllegalAccessException {
+        Reference ref = field.getAnnotation(Reference.class);
+
+        // 참조 필드가 같은 vo 안에 있는 경우
+        Field refField = vo.getClass().getDeclaredField(ref.value());
+        boolean canAccess = refField.canAccess(vo);
+        if (!canAccess)
+            refField.setAccessible(true);
+
+        Object findObj = findRefValue(vo, ref.value());
+        int repeatCnt = 0;
+        if (findObj != null) {
+            if (ClassUtils.isWholeNumber(findObj.getClass())) {
+                repeatCnt = ((Number) findObj).intValue();
+            } else {
+                repeatCnt = NumberUtils.intValue(findObj.toString());
+            }
+        }
+
+        refField.setAccessible(canAccess);
+        return repeatCnt;
     }
 
     private <T> T makeVo(@NonNull T subVo, @NonNull byte[] array, int p) {
@@ -339,6 +380,12 @@ public class MessageBuilder {
         System.arraycopy(array, p, decoration, 0, decoration.length);
         fromBytes(decoration, subVo);
         return subVo;
+    }
+
+    private <T> T makeVo(@NonNull Class<T> subVo, @NonNull byte[] array, int p) {
+        byte[] decoration = new byte[array.length - p];
+        System.arraycopy(array, p, decoration, 0, decoration.length);
+        return fromBytes(decoration, subVo);
     }
 
     private Supplier<Object> getSupplier(@NonNull byte[] v, @NonNull Class<?> type, DecimalPosition decimalPosition, String encoding) {
@@ -390,12 +437,13 @@ public class MessageBuilder {
         return sf;
     }
 
-    private <T> Supplier<?> getSupplier(@NonNull T vo, @NonNull Field field, @NonNull byte[] array, @NonNull Class<?> type, int p) {
+    private <E, T> Supplier<T> getSupplier(@NonNull E vo, @NonNull Field field, @NonNull byte[] array, int p) {
+        Class<?> type = field.getType();
         return () -> {
             try {
-                Object subVo = field.get(vo);
+                T subVo = (T) field.get(vo);
                 if (subVo == null) {
-                    subVo = type.getConstructor().newInstance();
+                    subVo = (T) type.getConstructor().newInstance();
                 }
                 return makeVo(subVo, array, p);
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException |

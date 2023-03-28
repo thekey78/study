@@ -164,6 +164,14 @@ public class TestVo {
 
     @Test
     public void testVo111() {
+        String[] strs = new String[3];
+        Class<? extends String[]> c = strs.getClass();
+        System.out.println(c);
+
+        Object objects = strs;
+
+        byte[] bytes = new byte[10];
+
         System.out.println(VoUtils.create(MessageCommonFooter.class));
         System.out.println(new MessageCommonFooter());
     }
