@@ -85,7 +85,7 @@ public class VoUtils {
      * @throws MessageException
      */
     public static byte[] toMessageBytes(@NonNull String src, @NonNull Length a_length) throws MessageException {
-        return toMessageBytes(src, a_length, null);
+        return toMessageBytes(src, a_length, (String) null);
     }
 
     /**
@@ -121,6 +121,13 @@ public class VoUtils {
                 throw new MessageException(exception);
             }
         }
+    }
+
+    public static byte[] toMessageBytes(@NonNull String src, @NonNull Length length, CharEncoding charEncoding) throws MessageException {
+        if(charEncoding == null)
+            return toMessageBytes(src, length, (String) null);
+        else
+            return toMessageBytes(src, length, charEncoding.value());
     }
 
     /**

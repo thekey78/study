@@ -7,7 +7,6 @@ import pe.kr.thekey78.messenger.enumeration.Ascii;
 import pe.kr.thekey78.messenger.enumeration.IoType;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 @MessageId("MSG000000001")
@@ -35,7 +34,7 @@ public class MSG000000001 {
         private int ncnt;
 
         @Reference("ncnt")
-        private List<Rec> rec;
+        private Rec[] rec;
 
         @Data
         public static class Rec {
